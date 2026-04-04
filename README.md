@@ -32,6 +32,17 @@ futbolcu-piyasa-analizi/
 ```
 
 
+## Veri Kaynağı
+Veri seti [Kaggle - Football Data from Transfermarkt](https://www.kaggle.com/datasets/davidcariboo/player-scores) platformundan elde edilmiştir.
+
+Kullanılan tablolar:
+- `players.csv` — oyuncu demografik bilgileri
+- `player_valuations.csv` — piyasa değeri geçmişi
+- `appearances.csv` — maç bazlı performans istatistikleri
+- `competitions.csv` — lig bilgileri
+- `clubs.csv` — kulüp bilgileri
+
+
 ## Ekip
 | İsim                |
 |---------------------|
