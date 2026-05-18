@@ -33,11 +33,11 @@ futbolcu-piyasa-analizi/
 
 
 ## Veri Kaynağı
-Veri seti [Kaggle - Football Data from Transfermarkt](https://www.kaggle.com/datasets/davidcariboo/player-scores) platformundan elde edilmiştir.
+Veri seti [Kaggle - Football Data from Transfermarkt](https://www.kaggle.com/datasets/davidcariboo/player-scores) platformundan 5 Nisan 2026 tarihinde elde edilmiştir.
 
 Kullanılan tablolar:
 - `players.csv` — oyuncu demografik bilgileri
-- `player_valuations.csv` — piyasa değeri geçmişi
+- `player_valuations.csv` — piyasa değeri geçmişi (en güncel değer)
 - `appearances.csv` — maç bazlı performans istatistikleri
 - `competitions.csv` — lig bilgileri
 - `clubs.csv` — kulüp bilgileri
