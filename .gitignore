@@ -1,0 +1,14 @@
+# veri
+data/raw/
+
+# notebook
+notebooks/.ipynb_checkpoints/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# sistem
+.DS_Store
