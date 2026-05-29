@@ -14,7 +14,7 @@ ekonomik değerleri üzerindeki etkisini nicel yöntemlerle ortaya koymaktır. �
 ## Hedeflenen Çıktılar
 Elde edilmesi beklenen çıktılar aşağıda verilmiştir:
 - Veri Analizi ve Görselleştirme: Oyuncu özellikleri ile piyasa değeri arasındaki ilişkileri açıklayan yorumlanmış grafikler.
-- Tahmin Modeli: En az iki farklı makine öğrenmesi algoritması (regresyon) kullanılarak geliştirilmiş, yüksek isabetli bir değer öngörü mekanizması.
+- Tahmin Modeli: Linear Regression (Doğrusal Regresyon) ve Random Forest (Rastgele Orman) algoritmaları kullanılarak geliştirilen genel ve mevki bazlı piyasa değeri tahmin modelleri.
 - Performans Raporu: Modellerin başarısının RMSE gibi teknik metriklerle karşılaştırıldığı ve zayıf/güçlü yönlerin analiz edildiği dökümantasyon.
 - Uçtan Uca Depo: Veri toplama aşamasından model sonucuna kadar tüm sürecin şeffaf bir şekilde izlenebildiği, düzenli bir GitHub deposu.
 
