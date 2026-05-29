@@ -5,6 +5,38 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+position_features = {
+    "Goalkeeper": [
+        "age", "height_in_cm", "total_matches", "minutes_per_match",
+        "total_yellow_cards", "total_red_cards",
+        "position_encoded", "foot_encoded",
+        "country_of_citizenship_encoded", "player_club_domestic_competition_id_encoded"
+    ],
+    "Defender": [
+        "age", "height_in_cm", "total_matches", "minutes_per_match",
+        "total_yellow_cards", "total_red_cards",
+        "position_encoded", "sub_position_encoded", "foot_encoded",
+        "country_of_citizenship_encoded", "player_club_domestic_competition_id_encoded"
+    ],
+    "Midfield": [
+        "age", "total_goals", "total_assists", "total_matches",
+        "goals_per_match", "assists_per_match", "minutes_per_match",
+        "total_yellow_cards", "total_red_cards",
+        "position_encoded", "sub_position_encoded", "foot_encoded",
+        "country_of_citizenship_encoded", "player_club_domestic_competition_id_encoded"
+    ],
+    "Attack": [
+        "age", "total_goals", "total_assists", "total_matches",
+        "goals_per_match", "assists_per_match", "minutes_per_match",
+        "total_yellow_cards", "total_red_cards",
+        "sub_position_encoded", "foot_encoded",
+        "country_of_citizenship_encoded", "player_club_domestic_competition_id_encoded"
+    ]
+}
 
 
 def load_data(path):
@@ -14,7 +46,7 @@ def load_data(path):
 
 
 def split_features(df, target="log_market_value"):
-    X = df.drop(columns=[target])
+    X = df.drop(columns=[target, "position"])
     y = df[target]
     print(f"Girdi boyutu: {X.shape}")
     print(f"Çıktı boyutu: {y.shape}")
@@ -62,7 +94,83 @@ def cross_validate(lr, rf, X_train, y_train, cv=5):
     return cv_rmse_lr, cv_rmse_rf
 
 
-def plot_results(y_test, y_pred_lr, y_pred_rf, output_path="../visuals/actual_vs_predicted.png"):
+def train_position_models(df):
+    position_results = []
+    position_models = {}
+
+    for position in sorted(df["position"].unique()):
+        df_pos = df[df["position"] == position].copy()
+        X_pos = df_pos[position_features[position]]
+        y_pos = df_pos["log_market_value"]
+
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            X_pos, y_pos, test_size=0.2, random_state=42
+        )
+
+        lr_pos = LinearRegression()
+        lr_pos.fit(X_tr, y_tr)
+        y_pred_lr_pos = lr_pos.predict(X_te)
+        cv_lr_pos = np.sqrt(-cross_val_score(
+            lr_pos, X_tr, y_tr, cv=5, scoring="neg_mean_squared_error"
+        ))
+
+        rf_pos = RandomForestRegressor(n_estimators=100, random_state=42)
+        rf_pos.fit(X_tr, y_tr)
+        y_pred_rf_pos = rf_pos.predict(X_te)
+        cv_rf_pos = np.sqrt(-cross_val_score(
+            rf_pos, X_tr, y_tr, cv=5, scoring="neg_mean_squared_error"
+        ))
+
+        position_results.append({
+            "Mevki": position,
+            "LR RMSE": np.sqrt(mean_squared_error(y_te, y_pred_lr_pos)),
+            "RF RMSE": np.sqrt(mean_squared_error(y_te, y_pred_rf_pos)),
+            "LR MAE": mean_absolute_error(y_te, y_pred_lr_pos),
+            "RF MAE": mean_absolute_error(y_te, y_pred_rf_pos),
+            "LR R²": r2_score(y_te, y_pred_lr_pos),
+            "RF R²": r2_score(y_te, y_pred_rf_pos),
+            "LR CV RMSE": cv_lr_pos.mean(),
+            "RF CV RMSE": cv_rf_pos.mean()
+        })
+        position_models[position] = {"lr": lr_pos, "rf": rf_pos}
+        print(f"{position:12} | LR R²: {position_results[-1]['LR R²']:.4f} | RF R²: {position_results[-1]['RF R²']:.4f}")
+
+    position_df = pd.DataFrame(position_results)
+    print()
+    print(position_df.to_string(index=False))
+    return position_models, position_df
+
+
+def print_position_predictions(df, position_models):
+    for position in sorted(df["position"].unique()):
+        df_pos_all = df[df["position"] == position]
+        X_pos_all = df_pos_all[position_features[position]]
+        y_pos_all = df_pos_all["log_market_value"]
+
+        _, X_te_pos, _, y_te_pos = train_test_split(
+            X_pos_all, y_pos_all, test_size=0.2, random_state=42
+        )
+
+        lr_pos_sample = position_models[position]["lr"]
+        rf_pos_sample = position_models[position]["rf"]
+
+        pred_lr_eur = np.expm1(lr_pos_sample.predict(X_te_pos[:3]))
+        pred_rf_eur = np.expm1(rf_pos_sample.predict(X_te_pos[:3]))
+        actual_eur = np.expm1(y_te_pos.values[:3])
+
+        sample_pos = pd.DataFrame({
+            "Gerçek (€)": actual_eur,
+            "LR Tahmini (€)": pred_lr_eur,
+            "RF Tahmini (€)": pred_rf_eur
+        }).map(lambda x: f"{x:,.0f}")
+        print(f"\n{position}:")
+        print(sample_pos.to_string(index=False))
+
+
+def plot_results(y_test, y_pred_lr, y_pred_rf, output_path=None):
+    if output_path is None:
+        output_path = os.path.join(BASE_DIR, "visuals", "actual_vs_predicted.png")
+
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
     for ax, y_pred, title in zip(
@@ -83,7 +191,10 @@ def plot_results(y_test, y_pred_lr, y_pred_rf, output_path="../visuals/actual_vs
     plt.show()
 
 
-def plot_feature_importance(rf, feature_names, output_path="../visuals/feature_importance.png"):
+def plot_feature_importance(rf, feature_names, output_path=None):
+    if output_path is None:
+        output_path = os.path.join(BASE_DIR, "visuals", "feature_importance.png")
+
     importances = pd.Series(rf.feature_importances_, index=feature_names)
     importances = importances.sort_values(ascending=True)
 
@@ -97,7 +208,10 @@ def plot_feature_importance(rf, feature_names, output_path="../visuals/feature_i
     plt.show()
 
 
-def plot_residuals(y_test, y_pred_lr, y_pred_rf, output_path="../visuals/residuals.png"):
+def plot_residuals(y_test, y_pred_lr, y_pred_rf, output_path=None):
+    if output_path is None:
+        output_path = os.path.join(BASE_DIR, "visuals", "residuals.png")
+
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
     for ax, y_pred, title in zip(
@@ -134,7 +248,7 @@ def print_predictions(y_test, y_pred_lr, y_pred_rf, n=10):
 
 
 def main():
-    df = load_data("../data/processed/processed.csv")
+    df = load_data(os.path.join(BASE_DIR, "data", "processed", "processed.csv"))
     X, y = split_features(df)
     X_train, X_test, y_train, y_test = train_test(X, y)
 
@@ -160,6 +274,9 @@ def main():
     plot_feature_importance(rf, X.columns)
     plot_residuals(y_test, y_pred_lr, y_pred_rf)
     print_predictions(y_test, y_pred_lr, y_pred_rf)
+
+    position_models, _ = train_position_models(df)
+    print_position_predictions(df, position_models)
 
 
 if __name__ == "__main__":

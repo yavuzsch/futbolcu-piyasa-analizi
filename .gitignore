@@ -1,5 +1,14 @@
-data/raw
-notebooks/.ipynb_checkpoints/.DS_Store
+# veri
+data/raw/
+
+# notebook
+notebooks/.ipynb_checkpoints/
+
+# python
 .venv/
-.ipynb_checkpoints/
 __pycache__/
+*.pyc
+.env
+
+# sistem
+.DS_Store
