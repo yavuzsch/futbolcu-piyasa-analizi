@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import os
+import joblib
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -277,6 +278,14 @@ def main():
 
     position_models, _ = train_position_models(df)
     print_position_predictions(df, position_models)
+
+    models_dir = os.path.join(BASE_DIR, "models")
+    os.makedirs(models_dir, exist_ok=True)
+
+    joblib.dump(rf, os.path.join(models_dir, "random_forest.pkl"))
+    joblib.dump(X.columns.tolist(), os.path.join(models_dir, "feature_columns.pkl"))
+
+    print("Model kaydedildi.")
 
 
 if __name__ == "__main__":
