@@ -1,8 +1,15 @@
 # veri
-data/raw/
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
 
 # notebook
 notebooks/.ipynb_checkpoints/
+
+# model
+models/*
+!models/.gitkeep
 
 # python
 .venv/

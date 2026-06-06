@@ -1,13 +1,29 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 import os
+import joblib
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+CATEGORICAL_COLS = [
+    "position",
+    "sub_position",
+    "foot",
+    "country_of_citizenship",
+    "player_club_domestic_competition_id"
+]
+
+NUMERIC_COLS = [
+    "age", "height_in_cm",
+    "total_goals", "total_assists", "total_matches",
+    "total_yellow_cards", "total_red_cards",
+    "goals_per_match", "assists_per_match", "minutes_per_match"
+]
 
 position_features = {
     "Goalkeeper": [
@@ -43,6 +59,19 @@ def load_data(path):
     df = pd.read_csv(path)
     print(f"Veri yüklendi: {df.shape}")
     return df
+
+
+def build_encoders_and_scaler(df):
+    encoders = {}
+    for col in CATEGORICAL_COLS:
+        le = LabelEncoder()
+        le.fit(df[col].astype(str))
+        encoders[col] = le
+
+    scaler = StandardScaler()
+    scaler.fit(df[NUMERIC_COLS])
+
+    return encoders, scaler
 
 
 def split_features(df, target="log_market_value"):
@@ -167,71 +196,6 @@ def print_position_predictions(df, position_models):
         print(sample_pos.to_string(index=False))
 
 
-def plot_results(y_test, y_pred_lr, y_pred_rf, output_path=None):
-    if output_path is None:
-        output_path = os.path.join(BASE_DIR, "visuals", "actual_vs_predicted.png")
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
-    for ax, y_pred, title in zip(
-        axes,
-        [y_pred_lr, y_pred_rf],
-        ["Linear Regression", "Random Forest"]
-    ):
-        ax.scatter(y_test, y_pred, alpha=0.2, color="steelblue")
-        ax.plot([y_test.min(), y_test.max()],
-                [y_test.min(), y_test.max()], "r--", linewidth=1)
-        ax.set_xlabel("Gerçek (log)")
-        ax.set_ylabel("Tahmin (log)")
-        ax.set_title(title)
-
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
-    print(f"Görsel kaydedildi: {output_path}")
-    plt.show()
-
-
-def plot_feature_importance(rf, feature_names, output_path=None):
-    if output_path is None:
-        output_path = os.path.join(BASE_DIR, "visuals", "feature_importance.png")
-
-    importances = pd.Series(rf.feature_importances_, index=feature_names)
-    importances = importances.sort_values(ascending=True)
-
-    plt.figure(figsize=(8, 6))
-    importances.plot(kind="barh", color="steelblue")
-    plt.xlabel("Önem Skoru")
-    plt.title("Random Forest — Özellik Önemi")
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
-    print(f"Görsel kaydedildi: {output_path}")
-    plt.show()
-
-
-def plot_residuals(y_test, y_pred_lr, y_pred_rf, output_path=None):
-    if output_path is None:
-        output_path = os.path.join(BASE_DIR, "visuals", "residuals.png")
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
-    for ax, y_pred, title in zip(
-        axes,
-        [y_pred_lr, y_pred_rf],
-        ["Linear Regression", "Random Forest"]
-    ):
-        residuals = y_test - y_pred
-        ax.scatter(y_pred, residuals, alpha=0.2, color="steelblue")
-        ax.axhline(0, color="red", linestyle="--", linewidth=1)
-        ax.set_xlabel("Tahmin (log)")
-        ax.set_ylabel("Artık (Gerçek - Tahmin)")
-        ax.set_title(f"{title} — Artık Dağılımı")
-
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
-    print(f"Görsel kaydedildi: {output_path}")
-    plt.show()
-
-
 def print_predictions(y_test, y_pred_lr, y_pred_rf, n=10):
     y_test_eur = np.expm1(y_test)
     y_pred_lr_eur = np.expm1(y_pred_lr)
@@ -248,6 +212,28 @@ def print_predictions(y_test, y_pred_lr, y_pred_rf, n=10):
 
 
 def main():
+    models_dir = os.path.join(BASE_DIR, "models")
+    os.makedirs(models_dir, exist_ok=True)
+
+    merged_path = os.path.join(BASE_DIR, "data", "processed", "merged.csv")
+    df_raw = pd.read_csv(merged_path)
+
+    df_raw = df_raw.dropna(subset=["total_goals", "total_assists", "total_minutes", "age"])
+    df_raw["foot"] = df_raw["foot"].fillna("unknown")
+    df_raw["height_in_cm"] = df_raw["height_in_cm"].fillna(df_raw["height_in_cm"].mean())
+    df_raw["sub_position"] = df_raw["sub_position"].fillna(df_raw["position"])
+    df_raw["country_of_citizenship"] = df_raw["country_of_citizenship"].fillna("unknown")
+    df_raw["player_club_domestic_competition_id"] = df_raw["player_club_domestic_competition_id"].fillna("unknown")
+    df_raw = df_raw[df_raw["position"] != "Missing"]
+    df_raw = df_raw[df_raw["height_in_cm"] >= 150]
+    df_raw = df_raw[df_raw["age"] < 38]
+    df_raw = df_raw[df_raw["market_value_in_eur"] >= 100_000]
+
+    encoders, scaler = build_encoders_and_scaler(df_raw)
+    joblib.dump(encoders, os.path.join(models_dir, "encoders.pkl"))
+    joblib.dump(scaler,   os.path.join(models_dir, "scaler.pkl"))
+    print("Encoder ve scaler kaydedildi.")
+
     df = load_data(os.path.join(BASE_DIR, "data", "processed", "processed.csv"))
     X, y = split_features(df)
     X_train, X_test, y_train, y_test = train_test(X, y)
@@ -270,13 +256,22 @@ def main():
     print("\nModel Karşılaştırması:")
     print(results.to_string(index=False))
 
-    plot_results(y_test, y_pred_lr, y_pred_rf)
-    plot_feature_importance(rf, X.columns)
-    plot_residuals(y_test, y_pred_lr, y_pred_rf)
     print_predictions(y_test, y_pred_lr, y_pred_rf)
 
     position_models, _ = train_position_models(df)
     print_position_predictions(df, position_models)
+
+    joblib.dump(lr, os.path.join(models_dir, "lr_model.pkl"))
+    joblib.dump(rf, os.path.join(models_dir, "rf_model.pkl"))
+    joblib.dump(X.columns.tolist(), os.path.join(models_dir, "feature_columns.pkl"))
+
+    position_lr_models = {pos: models["lr"] for pos, models in position_models.items()}
+    position_rf_models = {pos: models["rf"] for pos, models in position_models.items()}
+
+    joblib.dump(position_lr_models, os.path.join(models_dir, "position_lr_models.pkl"))
+    joblib.dump(position_rf_models, os.path.join(models_dir, "position_rf_models.pkl"))
+    joblib.dump(position_features, os.path.join(models_dir, "position_feature_map.pkl"))
+    print("Tüm modeller kaydedildi.")
 
 
 if __name__ == "__main__":

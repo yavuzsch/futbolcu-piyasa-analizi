@@ -23,17 +23,27 @@ Elde edilmesi beklenen çıktılar aşağıda verilmiştir:
 ```
 futbolcu-piyasa-analizi/
 ├── data/
-├── docs/
+├── models/
 ├── notebooks/
-├── reports/
 ├── src/
 ├── visuals/
+├── requirements.txt
 └── README.md
 ```
 
 
+## Kurulum ve Çalıştırma
+1. Veri setini [Kaggle - Football Data from Transfermarkt](https://www.kaggle.com/datasets/davidcariboo/player-scores) adresinden indirip `data/raw/` klasörüne yerleştirin.
+2. Bağımlılıkları yükleyin: `pip install -r requirements.txt`
+3. Keşifsel analizi çalıştırın: `notebooks/01_eda.ipynb`
+4. Ön işleme adımlarını çalıştırın: `notebooks/02_preprocessing.ipynb`
+5. Modelleme adımlarını çalıştırın: `notebooks/03_modeling.ipynb`
+6. Modeli eğitip kaydedin: `python src/build.py`
+7. Arayüzü başlatın: `streamlit run src/app.py`
+
+
 ## Veri Kaynağı
-Veri seti [Kaggle - Football Data from Transfermarkt](https://www.kaggle.com/datasets/davidcariboo/player-scores) platformundan 5 Nisan 2026 tarihinde elde edilmiştir.
+Veri seti [Kaggle - Football Data from Transfermarkt](https://www.kaggle.com/datasets/davidcariboo/player-scores) platformundan elde edilmiştir.
 
 Kullanılan tablolar:
 - `players.csv` — oyuncu demografik bilgileri
