@@ -54,8 +54,8 @@ Kullanılan tablolar:
 
 
 ## Ekip
-| İsim                |
-|---------------------|
-| Yavuz Selim Çoraklı |
-| Miran Emre Eser     |
-| İrem Çelebi         |
+| İsim                   | Görev Dağılımı         |
+|------------------------|------------------------|
+| Yavuz Selim Çoraklı    | Veri Analizi ve İşleme |
+| Miran Emre Eser        | Modelleme ve Arayüz    |
+| İrem Çelebi            | Modelleme ve Rapor     |
