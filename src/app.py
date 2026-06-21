@@ -70,7 +70,7 @@ lr_model, rf_model, feature_columns, encoders, scaler, position_lr_models, posit
 options = load_dropdown_options()
 
 st.subheader("Futbolcu Bilgileri")
-st.caption("Lütfen futbolcunun kariyer istatistiklerini giriniz.")
+st.caption("Lütfen futbolcunun kulüp kariyeri istatistiklerini giriniz (milli takım maçları dahil değildir).")
 
 position = st.selectbox("Mevki", options["position"])
 sub_position = st.selectbox("Alt Mevki", options["sub_position"])
